@@ -5,6 +5,7 @@ const express = require("express");
 const database = require("./data/db");
 
 const server = express();
+server.use(express.json());
 const port = "8000";
 
 // const server = http.createServer((req, res) => {
@@ -17,6 +18,12 @@ const port = "8000";
 //   res.send("API is running and server is listening! Is this live?");
 // });
 
+// const sendUserError = (status, message, res) => {
+//   // This is just a helper method that we'll use for sending errors when things go wrong.
+//   res.status(status).json({ errorMessage: message });
+//   return;
+// };
+
 server.get("/api/users", (req, res) => {
   database
     .find()
@@ -24,7 +31,9 @@ server.get("/api/users", (req, res) => {
       res.json({ users });
     })
     .catch(error => {
-      sendUserError(500, "The users information could not be retrieved.", res);
+      res.status(500).json({
+        ErrorMessage: "The users information could not be retrieved."
+      });
       return;
     });
 });
@@ -34,65 +43,83 @@ server.get("/api/users/:id", (req, res) => {
     .findById(req.params.id)
     .then(user => {
       if (user.length === 0) {
-        sendUserError(404, "User with that Id does not exist");
+        res
+          .status(404)
+          .json({ ErrorMessage: "User with that Id does not exist" });
         return;
       }
       res.json(user);
     })
     .catch(error => {
-      sendUserError(500, "Error looking up user", res);
+      res.status(500).json({ ErrorMessage: "Error looking up user" });
       return;
     });
 });
 
 server.delete("/api/users/:id", (req, res) => {
-  const { id } = req.params;
+  const id = req.params.id;
   database
     .remove(id)
     .then(res => {
-      if (res === 0) {
-        sendUserError(404, `The user with the id ${id} does not exist. `, res);
-        return;
+      if (res) {
+        res
+          .status(200)
+          .json({ success: `User with id: ${id} removed from system` });
+      } else {
+        res
+          .status(404)
+          .json({ ErrorMessage: `User with id ${id} does not exist` });
       }
-      res.json({ success: `User with id: ${id} removed from system` });
     })
     .catch(error => {
-      sendUserError(500, "The user could not be removed", res);
+      console.log("In catch ---" + error);
+      res.status(500).json({ ErrorMessage: "The user could not be removed" });
     });
 });
 
 server.put("/api/users/:id", (req, res) => {
   const { id } = req.params;
   const { name, bio } = req.body;
-  if (!name || !body) {
-    sendUserError(400, "Must provide name and bio", res);
+  if (!name || !bio) {
+    res.status(400).json({ ErroMessage: "Must provide name and bio" });
     return;
   }
-  database.update(id, { name, bio }).then(response => {
-    if (response === 0) {
-      sendUserError(404, "The user with the specified ID does not exist.", res);
-      return;
-    }
-  });
   database
-    .findById(id)
-    .then(user => {
-      if (user.length === 0) {
-        sendUserError(404, "User with that id not found", res);
+    .update(id, { name, bio })
+    .then(response => {
+      if (response === 0) {
+        res.status(404).json({
+          ErrorMessage: "The user with the specified ID does not exist."
+        });
         return;
       }
-      res.status(201).json(user);
+
+      database
+        .findById(id)
+        .then(user => {
+          if (user.length === 0) {
+            res
+              .status(404)
+              .json({ ErrorMessage: "User with that id not found" });
+            return;
+          }
+          res.status(201).json(user);
+        })
+        .catch(error => {
+          res.status(500).json({ ErrorMessage: "Error Looking up User" });
+          return;
+        });
     })
     .catch(error => {
-      sendUserError(500, "Something bad happened in the database", res);
-      return;
+      res.status(500).json({ ErrorMessage: "Something bad has happened" });
     });
 });
 
 server.post("/api/users", (req, res) => {
+  console.log(":: REQUEST BODY IS :: " + req.body);
   const { name, bio, created_at, updated_at } = req.body;
   if (!name || !bio) {
-    sendUserError(400, "Must provide name and bio", res);
+    res.status(400).json({ ErrorMessage: "Must provide name and bio" });
     return;
   }
   database
@@ -107,7 +134,7 @@ server.post("/api/users", (req, res) => {
     })
     .catch(error => {
       console.log(error);
-      sendUserError(400, error, res);
+      res.status(400).json({ ErrorMessage: error });
       return;
     });
 });
