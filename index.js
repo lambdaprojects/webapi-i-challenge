@@ -3,19 +3,19 @@
 
 const express = require("express");
 
-const port = "5000";
+const server = express();
+const port = "8000";
 
 // const server = http.createServer((req, res) => {
 //   res.statusCode = "200";
 //   res.setHeader("Content-Type", "text/plain");
 //   res.end("Hello World, from NodeJS");
 // });
-const server = express();
 
 server.get("/", (req, res) => {
-  res.send("Hello world from Express!");
+  res.send("API is running and server is listening! Is this live?");
 });
 
 server.listen(port, () => {
-  console.log(`server listening on port ${port}`);
+  console.log(`API is running and server is listening on port ${port}`);
 });
