@@ -2,7 +2,7 @@
 //const http = require("http");
 
 const express = require("express");
-const db = require("./data/db");
+const database = require("./data/db");
 
 const server = express();
 const port = "8000";
@@ -18,12 +18,73 @@ const port = "8000";
 // });
 
 server.get("/api/users", (req, res) => {
-  db.find()
+  database
+    .find()
     .then(users => {
       res.json({ users });
     })
     .catch(error => {
       sendUserError(500, "The users information could not be retrieved.", res);
+      return;
+    });
+});
+
+server.get("/api/users/:id", (req, res) => {
+  database
+    .findById(req.params.id)
+    .then(user => {
+      if (user.length === 0) {
+        sendUserError(404, "User with that Id does not exist");
+        return;
+      }
+      res.json(user);
+    })
+    .catch(error => {
+      sendUserError(500, "Error looking up user", res);
+      return;
+    });
+});
+
+server.delete("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  database
+    .remove(id)
+    .then(res => {
+      if (res === 0) {
+        sendUserError(404, `The user with the id ${id} does not exist. `, res);
+        return;
+      }
+      res.json({ success: `User with id: ${id} removed from system` });
+    })
+    .catch(error => {
+      sendUserError(500, "The user could not be removed", res);
+    });
+});
+
+server.put("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const { name, bio } = req.body;
+  if (!name || !body) {
+    sendUserError(400, "Must provide name and bio", res);
+    return;
+  }
+  database.update(id, { name, bio }).then(response => {
+    if (response === 0) {
+      sendUserError(404, "The user with the specified ID does not exist.", res);
+      return;
+    }
+  });
+  database
+    .findById(id)
+    .then(user => {
+      if (user.length === 0) {
+        sendUserError(404, "User with that id not found", res);
+        return;
+      }
+      res.json(user);
+    })
+    .catch(error => {
+      sendUserError(500, "Something bad happened in the database", res);
       return;
     });
 });
