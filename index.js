@@ -81,10 +81,33 @@ server.put("/api/users/:id", (req, res) => {
         sendUserError(404, "User with that id not found", res);
         return;
       }
-      res.json(user);
+      res.status(201).json(user);
     })
     .catch(error => {
       sendUserError(500, "Something bad happened in the database", res);
+      return;
+    });
+});
+
+server.post("/api/users", (req, res) => {
+  const { name, bio, created_at, updated_at } = req.body;
+  if (!name || !bio) {
+    sendUserError(400, "Must provide name and bio", res);
+    return;
+  }
+  database
+    .insert({
+      name,
+      bio,
+      created_at,
+      updated_at
+    })
+    .then(response => {
+      res.status(201).json(response);
+    })
+    .catch(error => {
+      console.log(error);
+      sendUserError(400, error, res);
       return;
     });
 });
